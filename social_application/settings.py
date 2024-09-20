@@ -27,6 +27,7 @@ SECRET_KEY = 'django-insecure-dz%qk@o3ngj4w-nv1uljmv_)!uy)5du8aa4(o&puq-_zem0&f0
 DEBUG = True
 
 ALLOWED_HOSTS = []
+AUTH_USER_MODEL = 'rest_api.CustomUser'
 
 
 # Application definition
