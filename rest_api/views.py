@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -10,6 +10,9 @@ from django.shortcuts import get_object_or_404
 from .serializer import UserSerializers, CredSerializer
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
+from django_ratelimit.decorators import ratelimit
+from rest_framework.permissions import AllowAny
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 
 @api_view(['GET'])
@@ -49,6 +52,7 @@ def user_action(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def signup(request):
     serializer = CredSerializer(data=request.data)
     if serializer.is_valid():
@@ -61,6 +65,7 @@ def signup(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def login(request):
     user = get_object_or_404(CustomUser, email=request.data['email'])
     if not user.check_password(request.data['password']):
