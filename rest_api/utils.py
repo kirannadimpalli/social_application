@@ -9,6 +9,5 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [UserRateThrottle, AnonRateThrottle]
 
     def get_throttles(self):
-        # Custom rate for this view
         self.throttle_scope = 'custom_token'  
         return super().get_throttles()
