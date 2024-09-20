@@ -37,6 +37,7 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         return {
             'id': obj.sender.id,
             'email': obj.sender.email 
+        }
 
 class FriendSerializer(serializers.ModelSerializer):
     class Meta:
