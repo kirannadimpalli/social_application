@@ -2,7 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 from django.urls import reverse
 from rest_framework import status
-from django.contrib.auth.models import User
+from rest_api.models import CustomUser
 from rest_api.models import UserDetails
 
 @pytest.fixture
@@ -12,21 +12,20 @@ def api_client():
 @pytest.mark.django_db
 def test_user_signup(api_client):
     url = reverse('signup')
-    signup_data = { "username": "test", "password": "test1234", "email": "test@mail.com" }
+    signup_data = { "password": "test1234", "email": "test@mail.com" }
 
     response = api_client.post(url, signup_data, format='json')
     assert response.status_code == status.HTTP_201_CREATED
-    user = User.objects.filter(email='test@mail.com').exists()
+    user = CustomUser.objects.filter(email='test@mail.com').exists()
     assert user is True
 
 
 @pytest.mark.django_db
 def test_user_login(api_client, django_user_model):
-    user = User.objects.create_user(email='testuser@example.com',username='test', password='password')
+    user = CustomUser.objects.create_user(email='testuser@example.com', password='password')
     url = reverse('login')
     login_data = {
         'email': 'testuser@example.com',
-        'username': 'test',
         'password': 'password'
     }
     response = api_client.post(url, login_data, format='json')
@@ -58,11 +57,11 @@ def test_create_user(api_client):
 @pytest.mark.django_db
 def test_authorization(api_client):
     url = reverse('signup')
-    signup_data = { "username": "test", "password": "test1234", "email": "test@mail.com" }
+    signup_data = {"password": "test1234", "email": "test@mail.com" }
     response = api_client.post(url, signup_data, format='json')
 
     url = reverse('get_token')
-    login_data = { "username": "test", "password": "test1234", "email": "test@mail.com" }
+    login_data = {"password": "test1234", "email": "test@mail.com" }
     response = api_client.post(url, login_data, format='json')
     access_token = response.json().get('access')
     assert access_token is not None, "Access token was not retrieved."
