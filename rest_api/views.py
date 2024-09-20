@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.response import Response
 from rest_framework import status
@@ -68,7 +69,7 @@ def login(request):
     return Response({'token': token.key, 'user': serializer.data})
 
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def test_token(request):
     return Response("passed!")
