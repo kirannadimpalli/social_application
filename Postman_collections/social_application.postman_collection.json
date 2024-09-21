@@ -12,7 +12,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"email\": \"user20@mail.com\",\n    \"name\": \"kiran\",\n    \"description\": \"welcome\",\n    \"mobile_number\": \"123456\",\n    \"password\": \"test1234\"\n}",
+					"raw": "{\n    \"email\": \"user20@gmail.com\",\n    \"name\": \"kiran\",\n    \"description\": \"welcome\",\n    \"mobile_number\": \"123456\",\n    \"password\": \"test1234\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -111,7 +111,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"email\": \"test11@mail.com\",\n    \"password\": \"test1234\"\n}",
+					"raw": "{\n    \"email\": \"user1@gmail.com\",\n    \"password\": \"test1234\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
