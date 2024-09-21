@@ -12,27 +12,6 @@ def api_client():
     return APIClient()
 
 
-# @pytest.mark.django_db
-# @override_settings(REST_FRAMEWORK={'DEFAULT_THROTTLE_CLASSES': []})
-# def test_authorization(api_client):
-#     url = reverse('signup')
-#     signup_data = {"password": "test1234", "email": "test@mail.com"}
-#     response = api_client.post(url, signup_data, format='json')
-#     assert response.status_code == status.HTTP_201_CREATED, "Signup failed."
-#     url = reverse('get_token')
-#     login_data = {"password": "test1234", "email": "test@mail.com"}
-    
-#     response = api_client.post(url, login_data, format='json')
-#     assert response.status_code == status.HTTP_200_OK, "Token request failed."
-#     access_token = response.json().get('access')
-    
-#     assert access_token is not None, "Access token was not retrieved."
-
-#     api_client.credentials(HTTP_AUTHORIZATION='Bearer ' + access_token)
-#     url = reverse('test_token') 
-#     response = api_client.get(url)
-#     assert response.status_code == status.HTTP_200_OK, "Authorized request failed."
-
 @pytest.mark.django_db
 def test_user_signup(api_client):
     url = reverse('signup')

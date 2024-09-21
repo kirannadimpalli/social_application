@@ -29,7 +29,10 @@ def signup(request):
         try:
             user = get_user_model().objects.create_user(
                 email=request.data['email'].lower(), 
-                password=request.data['password']
+                password=request.data['password'],
+                name=request.data['name'],
+                description=request.data['description'],
+                mobile_number=request.data['mobile_number']
             )
         except IntegrityError as e:
             return Response({'error': 'User with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -41,10 +44,15 @@ def signup(request):
 @throttle_classes([AnonRateThrottle, UserRateThrottle])
 def login(request):
     user = get_object_or_404(CustomUser, email=request.data['email'].lower())
+    
     if not user.check_password(request.data['password']):
-        return Response("missing user", status=status.HTTP_404_NOT_FOUND)
+        return Response("Invalid email or password", status=status.HTTP_404_NOT_FOUND)
+
+    print(user.name, user.description, user.mobile_number)
+
     token, created = Token.objects.get_or_create(user=user)
     serializer = CredSerializer(user)
+    
     return Response({'token': token.key, 'user': serializer.data})
 
 
@@ -66,6 +74,9 @@ def send_friend_request(request):
 
         if BlockedUser.objects.filter(blocker=sender, blocked=receiver).exists():
             return Response({'error': 'You have blocked this user and cannot send a friend request.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if BlockedUser.objects.filter(blocker=receiver, blocked=sender).exists():
+            return Response({'error': 'This user has blocked you.'}, status=status.HTTP_403_FORBIDDEN)
 
         existing_request = FriendRequest.objects.filter(sender=sender, receiver=receiver).first()
         if existing_request:
@@ -144,7 +155,7 @@ def reject_friend_request(request):
 
 
 @api_view(['POST'])
-@permission_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def block_user(request):
     blocked_email = request.data.get('blocked_email')
 
@@ -155,7 +166,9 @@ def block_user(request):
     
     try:
         blocked_user = User.objects.get(email=blocked_email)
-        BlockedUser.objects.get_or_create(blocker=request.user, blocked=blocked_user)
+        block, created = BlockedUser.objects.get_or_create(blocker=request.user, blocked=blocked_user)
+        if not created:
+            return Response({'error': 'You already blocked this user'}, status=status.HTTP_404_NOT_FOUND)
         return Response({'message': 'User blocked successfully.'}, status=status.HTTP_200_OK)
     
     except User.DoesNotExist:
@@ -173,7 +186,9 @@ def unblock_user(request):
     
     try:
         blocked_user = User.objects.get(email=blocked_email)
-        BlockedUser.objects.filter(blocker=request.user, blocked=blocked_user).delete()
+        blocked = BlockedUser.objects.filter(blocker=request.user, blocked=blocked_user).delete()
+        if not blocked[1]:
+            return  Response({'error': 'You might be unblocked already or no blocked users is present'}, status=status.HTTP_404_NOT_FOUND)
         return Response({'message': 'User unblocked successfully.'}, status=status.HTTP_200_OK)
 
     except User.DoesNotExist:
@@ -221,19 +236,24 @@ class UserPagination(PageNumberPagination):
     page_size = 10
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def search_users(request):
     keyword = request.query_params.get('q', '')
     if not keyword:
         return Response({'error': 'No search keyword provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    exact_email_match = CustomUser.objects.filter(email__iexact=keyword)
+    blocked_by_user = BlockedUser.objects.filter(blocker=request.user).values_list('blocked_id', flat=True)
     
+    blocking_user = BlockedUser.objects.filter(blocked=request.user).values_list('blocker_id', flat=True)
+
+    blocked_users = set(blocked_by_user) | set(blocking_user)
+
+    exact_email_match = CustomUser.objects.filter(email__iexact=keyword).exclude(id__in=blocked_users)
+
     if exact_email_match.exists():
         users = exact_email_match
     else:
-        users = CustomUser.objects.filter(
-            Q(name__icontains=keyword)
-        ).distinct()
+        users = CustomUser.objects.filter(Q(name__icontains=keyword)).exclude(id__in=blocked_users).distinct()
 
     paginator = UserPagination()
     paginated_users = paginator.paginate_queryset(users, request)

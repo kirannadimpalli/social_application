@@ -14,7 +14,15 @@ class CredSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = CustomUser(**validated_data)
+        breakpoint()
+        user = CustomUser(
+            email=validated_data['email'],
+            name=validated_data.get('name'),
+            description=validated_data.get('description'),
+            mobile_number=validated_data.get('mobile_number'),
+            is_active=validated_data.get('is_active', True),
+            is_staff=validated_data.get('is_staff', False)  
+        )
         user.set_password(validated_data['password'])
         user.save()
         return user
