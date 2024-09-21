@@ -66,7 +66,7 @@ Social Application that allows users to connect with friends, send friend reques
 
 To test the APIs for this project using Postman, follow these steps:
 
-1. Download the Postman collection: [social_app_postman_collection.json](./postman-collection/social_app_postman_collection.json)
+1. Download the Postman collection: [social_app_postman_collection.json](./postman-collection/social_application.postman_collection.json)
 2. Open Postman and click on **Import**.
 3. Choose the downloaded JSON file to import all the available APIs.
 
