@@ -36,14 +36,7 @@ Social Application that allows users to connect with friends, send friend reques
     ``` bash
     docker-compose up -d
     ```
-4. Apply database migrations:
-    ``` bash
-    docker-compose exec web python manage.py makemigrations
-    docker-compose exec web python manage.py migrate rest_api
-    docker-compose exec web python manage.py migrate
-    ```
-
-5. Open a browser and start interacting with the API:
+4. Open a browser and start interacting with the API:
     ```bash
     http://localhost:8000/api/signup/
     ```
