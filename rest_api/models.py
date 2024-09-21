@@ -4,14 +4,6 @@ from django.conf import settings
 
 # Create your models here.
 
-class UserDetails(models.Model):
-    name = models.CharField(max_length=100)
-    age = models.IntegerField(null=True)
-    description = models.CharField(max_length=300, blank=True, null=True)
-
-    def __str__(self):
-        return self.name
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -26,6 +18,10 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(email, password, **extra_fields)
+
+    def save(self, *args, **kwargs):
+        self.email = self.email.lower()
+        super(CustomUser, self).save(*args, **kwargs)
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)

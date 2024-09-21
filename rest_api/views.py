@@ -4,10 +4,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.response import Response
 from rest_framework import status
-from .models import UserDetails, FriendRequest, Friend, BlockedUser
+from .models import FriendRequest, Friend, BlockedUser
 from rest_api.models import CustomUser
 from django.shortcuts import get_object_or_404
-from .serializer import UserSerializers, CredSerializer, FriendRequestSerializer, FriendSerializer
+from .serializer import CredSerializer, FriendRequestSerializer, FriendSerializer
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
 from django_ratelimit.decorators import ratelimit
@@ -19,53 +19,20 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.cache import cache
 from django.db.models import Q
-
-
-@api_view(['GET'])
-def get_user(request):
-    user = UserDetails.objects.all()
-    serializer = UserSerializers(user, many=True)
-    return Response(serializer.data)
-
-@api_view(['POST'])
-def create_user(request):
-    serializer = UserSerializers(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET','DELETE', 'PUT'])
-def user_action(request, pk):
-    try:
-        user = UserDetails.objects.get(pk=pk)
-    except user.DoesNotExist:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    
-    if request.method == 'GET':
-        serializer = UserSerializers(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    elif request.method == 'PUT':
-        serializer = UserSerializers(user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+from django.db import IntegrityError
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
     serializer = CredSerializer(data=request.data)
     if serializer.is_valid():
-        user = get_user_model().objects.create_user(
-            email=request.data['email'], 
-            password=request.data['password']
-        )
+        try:
+            user = get_user_model().objects.create_user(
+                email=request.data['email'].lower(), 
+                password=request.data['password']
+            )
+        except IntegrityError as e:
+            return Response({'error': 'User with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
         token = Token.objects.create(user=user)
         return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -73,17 +40,12 @@ def signup(request):
 @api_view(['POST'])
 @throttle_classes([AnonRateThrottle, UserRateThrottle])
 def login(request):
-    user = get_object_or_404(CustomUser, email=request.data['email'])
+    user = get_object_or_404(CustomUser, email=request.data['email'].lower())
     if not user.check_password(request.data['password']):
         return Response("missing user", status=status.HTTP_404_NOT_FOUND)
     token, created = Token.objects.get_or_create(user=user)
     serializer = CredSerializer(user)
     return Response({'token': token.key, 'user': serializer.data})
-
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-def test_token(request):
-    return Response("passed!")
 
 
 @api_view(['POST'])
@@ -98,6 +60,9 @@ def send_friend_request(request):
         User = get_user_model()
         receiver = User.objects.get(email=receiver_email)
         sender = request.user
+
+        if request.user == receiver:
+            return Response({'error': 'You cannot send a friend request to yourself.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if BlockedUser.objects.filter(blocker=sender, blocked=receiver).exists():
             return Response({'error': 'You have blocked this user and cannot send a friend request.'}, status=status.HTTP_403_FORBIDDEN)

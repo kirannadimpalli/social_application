@@ -1,14 +1,6 @@
 from rest_framework import serializers
-from .models import UserDetails
 from .models import CustomUser, FriendRequest
 
-
-
-
-class UserSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = UserDetails
-        fields = '__all__'
 
 
 class CredSerializer(serializers.ModelSerializer):
@@ -16,6 +8,10 @@ class CredSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['email', 'name', 'description', 'mobile_number', 'is_active', 'is_staff']
         extra_kwargs = {'password': {'write_only': True}}
+
+    def validate(self, data):
+        data['email'] = data['email'].lower()
+        return data
 
     def create(self, validated_data):
         user = CustomUser(**validated_data)
@@ -25,7 +21,7 @@ class CredSerializer(serializers.ModelSerializer):
 
 class FriendRequestSerializer(serializers.ModelSerializer):
     sender = serializers.SerializerMethodField()
-    receiver = UserSerializers(read_only=True)
+    receiver = CredSerializer(read_only=True)
 
     class Meta:
         model = FriendRequest
@@ -33,7 +29,7 @@ class FriendRequestSerializer(serializers.ModelSerializer):
 
     def get_sender(self, obj):
         if obj.status == 'accepted':
-            return UserSerializers(obj.sender).data
+            return CredSerializer(obj.sender).data
         return {
             'id': obj.sender.id,
             'email': obj.sender.email 

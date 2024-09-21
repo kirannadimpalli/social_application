@@ -3,7 +3,6 @@ from rest_framework.test import APIClient
 from django.urls import reverse
 from rest_framework import status
 from rest_api.models import CustomUser
-from rest_api.models import UserDetails
 from django.test import override_settings
 import uuid
 from django.core.cache import cache
@@ -13,26 +12,26 @@ def api_client():
     return APIClient()
 
 
-@pytest.mark.django_db
-@override_settings(REST_FRAMEWORK={'DEFAULT_THROTTLE_CLASSES': []})
-def test_authorization(api_client):
-    url = reverse('signup')
-    signup_data = {"password": "test1234", "email": "test@mail.com"}
-    response = api_client.post(url, signup_data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED, "Signup failed."
-    url = reverse('get_token')
-    login_data = {"password": "test1234", "email": "test@mail.com"}
+# @pytest.mark.django_db
+# @override_settings(REST_FRAMEWORK={'DEFAULT_THROTTLE_CLASSES': []})
+# def test_authorization(api_client):
+#     url = reverse('signup')
+#     signup_data = {"password": "test1234", "email": "test@mail.com"}
+#     response = api_client.post(url, signup_data, format='json')
+#     assert response.status_code == status.HTTP_201_CREATED, "Signup failed."
+#     url = reverse('get_token')
+#     login_data = {"password": "test1234", "email": "test@mail.com"}
     
-    response = api_client.post(url, login_data, format='json')
-    assert response.status_code == status.HTTP_200_OK, "Token request failed."
-    access_token = response.json().get('access')
+#     response = api_client.post(url, login_data, format='json')
+#     assert response.status_code == status.HTTP_200_OK, "Token request failed."
+#     access_token = response.json().get('access')
     
-    assert access_token is not None, "Access token was not retrieved."
+#     assert access_token is not None, "Access token was not retrieved."
 
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer ' + access_token)
-    url = reverse('test_token') 
-    response = api_client.get(url)
-    assert response.status_code == status.HTTP_200_OK, "Authorized request failed."
+#     api_client.credentials(HTTP_AUTHORIZATION='Bearer ' + access_token)
+#     url = reverse('test_token') 
+#     response = api_client.get(url)
+#     assert response.status_code == status.HTTP_200_OK, "Authorized request failed."
 
 @pytest.mark.django_db
 def test_user_signup(api_client):
@@ -57,26 +56,6 @@ def test_user_login(api_client, django_user_model):
     assert response.status_code == status.HTTP_200_OK
     assert 'token' in response.data
 
-@pytest.mark.django_db
-def test_fetch_user(api_client):
-    url = reverse('get_user')
-    UserDetails.objects.create(name='kiran', age=25)
-    response = api_client.get(url)
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()) == 1
-    assert response.json()[0]['name'] == 'kiran'
-
-@pytest.mark.django_db
-def test_create_user(api_client):
-    url = reverse('create_user')
-    user_data = {
-        'name': 'john',
-        'age': 34
-    }
-    response = api_client.post(url, user_data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()['name'] == 'john'
-    assert response.json()['age'] == 34
 
 @pytest.mark.django_db
 def test_fail_authorization(api_client):
